@@ -1,0 +1,35 @@
+{
+  "compilerOptions": {
+    "types": ["vitest/globals", "node"],
+    "target": "ESNext",
+    "useDefineForClassFields": true,
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "isolatedModules": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+    "jsx": "react-jsx",
+
+    /* Strictness - включение этих опций сэкономит часы дебага */
+    "strict": true, 
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    
+    /* Linting */
+    "noUnusedLocals": true,
+    "noUnusedParameters": false,
+    "noFallthroughCasesInSwitch": true,
+
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["src", "vite.config.ts"], 
+  "exclude": ["node_modules"]
+}

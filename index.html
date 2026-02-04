@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark"> <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+    <title>VIntegCorp — Система управления предприятием</title>
+    
+    <meta name="description" content="VIntegCorp: Инновационная система управления предприятием (ERP) для автоматизации бизнес-процессов." />
+    <meta name="author" content="VIntegCorp" />
+    <meta name="robots" content="index, follow" />
+    
+    <meta property="og:title" content="VIntegCorp" />
+    <meta property="og:description" content="Система управления предприятием. Автоматизация и контроль в одном месте." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://vintegcorp.com" /> <meta property="og:image" content="/og-image.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+
+    <meta name="theme-color" content="#020617" /> <script>
+      (function() {
+        const theme = localStorage.getItem('theme') || 'system';
+        const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.classList.toggle('dark', isDark);
+      })();
+    </script>
+  </head>
+  
+  <body class="min-h-screen bg-background font-sans antialiased selection:bg-primary/20">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+    
+    <noscript>
+      <div style="text-align: center; padding: 20px;">
+        Для работы VIntegCorp необходимо включить JavaScript.
+      </div>
+    </noscript>
+  </body>
+</html>
