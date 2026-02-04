@@ -2,12 +2,12 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { 
-  Search, Plus, FileText, ChevronRight, ChevronDown, ChevronLeft,
+  Search, Plus, FileText, ChevronRight, ChevronLeft,
   MoreHorizontal, Star, Clock, Trash2, Edit3,
-  BookOpen, Folder, FolderOpen, Copy, ExternalLink,
+  BookOpen, Folder, FolderOpen, Copy,
   Sparkles, FileCode, ListChecks, MessageSquare,
-  TrendingUp, Eye, Calendar, StarOff, FolderPlus,
-  Type, Heading1, Heading2, Heading3, Layers, X, ChevronsDownUp
+  Calendar, FolderPlus,
+  Type, Heading1, Heading2, Heading3, Layers, ChevronsDownUp
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -280,13 +280,18 @@ const WikiPage = () => {
         fetchDocuments();
       }
     } else {
-      const { data: insertedDoc, error } = await supabase.from('wiki_documents').insert({
+      if (!user?.id) {
+        toast.error('Пользователь не авторизован');
+        setIsSubmitting(false);
+        return;
+      }
+      const { data: insertedDoc, error } = await supabase.from('wiki_documents').insert([{
         title: data.title.trim(),
         content: data.content.trim() || null,
         category_id: data.category_id || null,
         folder_id: data.folder_id || null,
-        author_id: user?.id,
-      }).select().single();
+        author_id: user.id,
+      }]).select().single();
 
       if (error) {
         toast.error('Ошибка создания');
@@ -404,22 +409,6 @@ const WikiPage = () => {
     const words = text.split(/\s+/).length;
     return Math.ceil(words / 200);
   };
-
-  const getTimeAgo = (date: string) => {
-    const now = new Date();
-    const then = new Date(date);
-    const diffMs = now.getTime() - then.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-
-    if (diffMins < 1) return 'только что';
-    if (diffMins < 60) return `${diffMins} мин назад`;
-    if (diffHours < 24) return `${diffHours} ч назад`;
-    if (diffDays < 7) return `${diffDays} д назад`;
-    return format(then, 'd MMM', { locale: ru });
-  };
-
   // Table of contents from content with icons
   const getTableOfContents = (content: string | null) => {
     if (!content) return [];

@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { formatDistanceToNow } from "date-fns";
 import { ru } from "date-fns/locale";
 import { 
-  Bell, X, Check, CheckCheck, Trash2, 
+  Bell, X, CheckCheck, Trash2, 
   Newspaper, CheckSquare, BookOpen, FileIcon 
 } from "lucide-react";
 import { Button } from "@/components/ui/button";

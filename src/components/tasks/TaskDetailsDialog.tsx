@@ -20,8 +20,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { TaskAttachments } from "./TaskAttachments";
 import { 
   Calendar, 
-  User, 
-  Clock, 
   MessageCircle, 
   Paperclip, 
   Send, 

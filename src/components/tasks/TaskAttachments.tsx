@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { Paperclip, Upload, X, FileText, Image, File, Download, Trash2, Loader2 } from "lucide-react";
+import { Paperclip, Upload, FileText, Image, File, Download, Trash2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
