@@ -205,9 +205,10 @@ const HomePage = () => {
   };
 
   const fetchStats = async () => {
+    if (!user?.id) return;
     const [employees, tasks, files, newsData] = await Promise.all([
       supabase.from('employees').select('id', { count: 'exact' }),
-      supabase.from('tasks').select('id', { count: 'exact' }).eq('assignee_id', user?.id),
+      supabase.from('tasks').select('id', { count: 'exact' }).eq('assignee_id', user.id),
       supabase.from('files').select('id', { count: 'exact' }),
       supabase.from('news').select('id', { count: 'exact' }).eq('is_official', true),
     ]);
@@ -283,10 +284,11 @@ const HomePage = () => {
   };
 
   const fetchMyTasks = async () => {
+    if (!user?.id) return;
     const { data } = await supabase
       .from('tasks')
       .select('id, title, due_date')
-      .eq('assignee_id', user?.id)
+      .eq('assignee_id', user.id)
       .neq('status', 'done')
       .order('created_at', { ascending: false })
       .limit(5);
@@ -347,10 +349,12 @@ const HomePage = () => {
         : p
     ));
 
+    if (!user?.id) return;
+    
     if (isLiked) {
-      await supabase.from('post_likes').delete().eq('post_id', postId).eq('user_id', user?.id);
+      await supabase.from('post_likes').delete().eq('post_id', postId).eq('user_id', user.id);
     } else {
-      await supabase.from('post_likes').insert({ post_id: postId, user_id: user?.id });
+      await supabase.from('post_likes').insert([{ post_id: postId, user_id: user.id }]);
     }
   };
 
@@ -535,19 +539,21 @@ const HomePage = () => {
       return { ...n, reactions: newReactions };
     }));
 
+    if (!user?.id) return;
+    
     if (isReacted) {
       await supabase
         .from('news_reactions')
         .delete()
         .eq('news_id', newsId)
-        .eq('user_id', user?.id)
+        .eq('user_id', user.id)
         .eq('reaction', reaction);
     } else {
-      await supabase.from('news_reactions').insert({
+      await supabase.from('news_reactions').insert([{
         news_id: newsId,
-        user_id: user?.id,
+        user_id: user.id,
         reaction,
-      });
+      }]);
     }
   };
 

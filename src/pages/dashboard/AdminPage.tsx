@@ -4,13 +4,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { 
   Users, Megaphone, FolderKanban, Plus, Trash2, Mail, 
-  Shield, UserCheck, Edit2, BarChart3, Activity, TrendingUp, Bell, Key
+  Shield, UserCheck, BarChart3, Activity, Key, Bell, TrendingUp
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
@@ -58,7 +57,7 @@ interface News {
   id: string;
   title: string;
   content: string;
-  is_official: boolean;
+  is_official: boolean | null;
   created_at: string;
 }
 
@@ -334,11 +333,17 @@ const AdminPage = () => {
 
     setIsSubmitting(true);
 
-    const { data: insertedNews, error } = await supabase.from('news').insert({
+    if (!user?.id) {
+      toast.error('Пользователь не авторизован');
+      setIsSubmitting(false);
+      return;
+    }
+
+    const { data: insertedNews, error } = await supabase.from('news').insert([{
       title: newNews.title.trim(),
       content: newNews.content.trim(),
-      author_id: user?.id,
-    }).select().single();
+      author_id: user.id,
+    }]).select().single();
 
     if (error) {
       toast.error('Ошибка создания новости');

@@ -197,11 +197,16 @@ const TasksPage = () => {
         resetForm();
       }
     } else {
-      const { data: insertedTask, error } = await supabase.from('tasks').insert({
+      if (!user?.id) {
+        toast.error('Пользователь не авторизован');
+        setIsSubmitting(false);
+        return;
+      }
+      const { data: insertedTask, error } = await supabase.from('tasks').insert([{
         ...taskData,
-        creator_id: user?.id,
+        creator_id: user.id,
         status: 'todo' as TaskStatus,
-      }).select().single();
+      }]).select().single();
 
       if (error) {
         toast.error('Ошибка создания задачи');
@@ -225,24 +230,6 @@ const TasksPage = () => {
 
     setIsSubmitting(false);
   };
-
-  const handleUpdateTaskStatus = async (taskId: string, newStatus: TaskStatus) => {
-    // Optimistic update
-    setTasks(prev => prev.map(t => 
-      t.id === taskId ? { ...t, status: newStatus } : t
-    ));
-
-    const { error } = await supabase
-      .from('tasks')
-      .update({ status: newStatus })
-      .eq('id', taskId);
-
-    if (error) {
-      toast.error('Ошибка обновления статуса');
-      fetchTasks(); // Revert on error
-    }
-  };
-
   const handleDeleteTask = async () => {
     if (!deleteTaskId) return;
     

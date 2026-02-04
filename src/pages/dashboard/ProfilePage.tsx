@@ -7,7 +7,7 @@ import { Camera, Save, Lock, User, Mail, Phone, Building, Briefcase } from "luci
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
+
 
 interface ProfileData {
   id: string;
@@ -35,7 +35,6 @@ const ProfilePage = () => {
   const [department, setDepartment] = useState("");
   
   // Password change states
-  const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [changingPassword, setChangingPassword] = useState(false);
@@ -189,7 +188,6 @@ const ProfilePage = () => {
       toast.error(error.message || "Ошибка смены пароля");
     } else {
       toast.success("Пароль успешно изменён");
-      setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
     }

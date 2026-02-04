@@ -24,7 +24,6 @@ import {
 } from "@/components/ui/dialog";
 import RichTextEditor from "./RichTextEditor";
 import { motion } from "framer-motion";
-import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
