@@ -2,12 +2,13 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { fileURLToPath } from "url";
+import { componentTagger } from "lovable-tagger";
 
 // Эмуляция __dirname для ESM
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
@@ -15,7 +16,10 @@ export default defineConfig({
       overlay: false, // Отключает раздражающий оверлей с ошибками на весь экран
     },
   },
-  plugins: [react()],
+  plugins: [
+    react(),
+    mode === 'development' && componentTagger(),
+  ].filter(Boolean),
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
@@ -42,4 +46,4 @@ export default defineConfig({
     },
     chunkSizeWarningLimit: 1000, // Немного подняли лимит, так как чанки все равно разделены
   },
-});
+}));
