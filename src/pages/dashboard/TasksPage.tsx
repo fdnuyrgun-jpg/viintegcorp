@@ -95,16 +95,29 @@ const TasksPage = () => {
       return;
     }
 
+    const taskIds = data?.map(task => task.id) ?? [];
     const assigneeIds = [...new Set(data?.filter(t => t.assignee_id).map(t => t.assignee_id) || [])];
     
     // Fetch assignee names, comment counts, and attachment counts in parallel
     const [empResult, commentsResult, attachmentsResult] = await Promise.all([
       assigneeIds.length > 0 
         ? supabase.from('employees').select('user_id, full_name').in('user_id', assigneeIds)
-        : Promise.resolve({ data: [] as { user_id: string; full_name: string }[] }),
-      supabase.from('task_comments').select('task_id'),
-      supabase.from('task_attachments').select('task_id')
+        : Promise.resolve({ data: [] as { user_id: string; full_name: string }[], error: null }),
+      taskIds.length > 0
+        ? supabase.from('task_comments').select('task_id').in('task_id', taskIds)
+        : Promise.resolve({ data: [] as { task_id: string }[], error: null }),
+      taskIds.length > 0
+        ? supabase.from('task_attachments').select('task_id').in('task_id', taskIds)
+        : Promise.resolve({ data: [] as { task_id: string }[], error: null })
     ]);
+
+    if (empResult.error || commentsResult.error || attachmentsResult.error) {
+      console.error('Error fetching task metadata:', {
+        employees: empResult.error,
+        comments: commentsResult.error,
+        attachments: attachmentsResult.error,
+      });
+    }
 
     const employeeMap = new Map<string, string>(
       empResult.data?.map(e => [e.user_id, e.full_name] as [string, string]) || []
@@ -133,11 +146,18 @@ const TasksPage = () => {
   }, []);
 
   const fetchEmployees = useCallback(async () => {
-    const { data } = await supabase
-      .from('employees')
-      .select('user_id, full_name')
-      .order('full_name');
-    setEmployees(data?.filter(e => e.user_id) as Employee[] || []);
+    const { data, error } = await supabase.rpc('get_public_employees');
+    if (error) {
+      console.error('Error fetching employees:', error);
+      return;
+    }
+    const normalizedEmployees = (data ?? [])
+      .map(employee => ({
+        user_id: employee.user_id,
+        full_name: employee.full_name,
+      }))
+      .filter(employee => employee.user_id);
+    setEmployees(normalizedEmployees);
   }, []);
 
   useEffect(() => {

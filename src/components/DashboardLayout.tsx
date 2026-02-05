@@ -20,11 +20,15 @@ const DashboardLayout = () => {
 
   const fetchUserProfile = async () => {
     if (!user) return;
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('employees')
       .select('full_name, avatar_url')
       .eq('user_id', user.id)
       .single();
+    if (error) {
+      console.error("Failed to fetch user profile:", error);
+      return;
+    }
     if (data) {
       setUserFullName(data.full_name);
       setUserAvatar(data.avatar_url || undefined);
