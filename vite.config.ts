@@ -9,6 +9,23 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export default defineConfig(({ mode }) => {
+  // In Lovable Cloud, backend secrets are available as process.env.SUPABASE_*
+  // but Vite only exposes variables prefixed with VITE_ to the client.
+  // We bridge them safely (only when present) to avoid injecting `undefined`.
+  const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+  const supabaseKey =
+    process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+    process.env.SUPABASE_PUBLISHABLE_KEY ||
+    process.env.SUPABASE_ANON_KEY;
+
+  const defineEnv: Record<string, string> = {};
+  if (supabaseUrl) {
+    defineEnv["import.meta.env.VITE_SUPABASE_URL"] = JSON.stringify(supabaseUrl);
+  }
+  if (supabaseKey) {
+    defineEnv["import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY"] = JSON.stringify(supabaseKey);
+  }
+
   return {
   server: {
     host: "::",
@@ -21,6 +38,7 @@ export default defineConfig(({ mode }) => {
     react(),
     mode === 'development' && componentTagger(),
   ].filter(Boolean),
+  define: defineEnv,
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
