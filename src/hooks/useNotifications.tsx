@@ -33,7 +33,12 @@ export function useNotifications(userId: string | undefined) {
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchNotifications = useCallback(async () => {
-    if (!userId) return;
+    if (!userId) {
+      setNotifications([]);
+      setUnreadCount(0);
+      setIsLoading(false);
+      return;
+    }
 
     try {
       const { data, error } = await supabase
@@ -139,7 +144,10 @@ export function useNotifications(userId: string | undefined) {
 
   // Subscribe to realtime notifications
   useEffect(() => {
-    if (!userId) return;
+    if (!userId) {
+      setIsLoading(false);
+      return;
+    }
 
     fetchNotifications();
 

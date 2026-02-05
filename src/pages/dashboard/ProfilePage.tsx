@@ -99,17 +99,28 @@ const ProfilePage = () => {
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !user || !profile) return;
+    if (!file || !user || !profile) {
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      return;
+    }
     
     // Validate file type
     if (!file.type.startsWith('image/')) {
       toast.error("Можно загружать только изображения");
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
       return;
     }
     
     // Validate file size (max 2MB)
     if (file.size > 2 * 1024 * 1024) {
       toast.error("Максимальный размер файла — 2 МБ");
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
       return;
     }
     
