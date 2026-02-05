@@ -41,6 +41,12 @@ export default defineConfig(({ mode }) => {
   define: defineEnv,
   resolve: {
     alias: {
+      // Route all app imports away from the auto-generated client (which relies on missing VITE_* envs in preview)
+      // to a runtime-safe client implementation with fallbacks.
+      "@/integrations/supabase/client": path.resolve(
+        __dirname,
+        "./src/integrations/supabase/client.runtime.ts"
+      ),
       "@": path.resolve(__dirname, "./src"),
     },
   },
