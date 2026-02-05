@@ -4,7 +4,15 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { 
-  Users, CheckSquare, FileText, Bell, Clock, ChevronRight, Megaphone
+  Users,
+  CheckSquare,
+  FileText,
+  Bell,
+  Clock,
+  ChevronRight,
+  Megaphone,
+  BookOpen,
+  PlusCircle
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -14,6 +22,7 @@ import StatsCard from "@/components/home/StatsCard";
 import FeedSkeleton from "@/components/home/FeedSkeleton";
 import StatsSkeleton from "@/components/home/StatsSkeleton";
 import NewsCard from "@/components/home/NewsCard";
+import { Button } from "@/components/ui/button";
 
 interface Post {
   id: string;
@@ -703,6 +712,24 @@ const HomePage = () => {
           >
             На сегодня у вас {stats.tasksCount} активных задач. Проверьте последние обновления и объявления.
           </motion.p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button
+              variant="gradient"
+              size="sm"
+              onClick={() => document.getElementById("create-post")?.scrollIntoView({ behavior: "smooth" })}
+            >
+              <PlusCircle className="w-4 h-4" />
+              Создать пост
+            </Button>
+            <Button variant="glass" size="sm" onClick={() => navigate("/dashboard/tasks")}>
+              <CheckSquare className="w-4 h-4" />
+              Мои задачи
+            </Button>
+            <Button variant="glass" size="sm" onClick={() => navigate("/dashboard/wiki")}>
+              <BookOpen className="w-4 h-4" />
+              Открыть Wiki
+            </Button>
+          </div>
         </div>
         <div className="absolute right-6 top-1/2 -translate-y-1/2 hidden sm:flex items-center gap-4">
           <motion.div 
@@ -752,7 +779,7 @@ const HomePage = () => {
         {/* Main feed */}
         <div className="space-y-4">
           {/* Official News Section - Above the feed */}
-          {news.length > 0 && (
+          {loading ? null : news.length > 0 ? (
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -800,10 +827,37 @@ const HomePage = () => {
                 )}
               </div>
             </motion.div>
+          ) : (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="glass rounded-xl p-6 text-center space-y-3"
+            >
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-amber-500/10 text-amber-500">
+                <Megaphone className="h-6 w-6" />
+              </div>
+              <div className="space-y-1">
+                <p className="font-medium">Пока нет официальных новостей</p>
+                <p className="text-sm text-muted-foreground">
+                  Как только появятся объявления, они будут показываться здесь.
+                </p>
+              </div>
+              {isAdmin && (
+                <Button variant="outline" size="sm" onClick={() => navigate("/dashboard/admin")}>
+                  Перейти в админ-панель
+                </Button>
+              )}
+            </motion.div>
           )}
 
           {/* Create post */}
-          <CreatePostInput userName={currentUserName} userAvatar={currentUserAvatar} onSubmit={handleCreatePost} />
+          <div id="create-post">
+            <CreatePostInput
+              userName={currentUserName}
+              userAvatar={currentUserAvatar}
+              onSubmit={handleCreatePost}
+            />
+          </div>
 
           {/* Feed header */}
           <motion.div 

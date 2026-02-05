@@ -29,7 +29,7 @@ npm run build
 
 **SPA-роутинг:** в проекте есть `vercel.json` (Vercel) и `public/_redirects` (Netlify) для корректной работы client-side маршрутизации.
 
-**Важно:** Перед деплоем задайте переменные окружения:
+**Важно:** Перед деплоем задайте переменные окружения (для вашего нового проекта Supabase):
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_PUBLISHABLE_KEY`
 
@@ -38,3 +38,11 @@ npm run build
 ```sh
 npm run preview
 ```
+
+## Подготовка к продаже
+
+1. Создайте новый проект в Supabase и заполните `.env` значениями:
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_PUBLISHABLE_KEY`
+2. Выполните сборку: `npm run build`.
+3. Разместите содержимое папки `dist/` на выбранном хостинге.
