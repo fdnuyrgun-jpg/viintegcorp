@@ -14,20 +14,30 @@ const DashboardLayout = () => {
 
   useEffect(() => {
     if (user) {
-      fetchUserProfile();
+      void fetchUserProfile();
     }
   }, [user]);
 
   const fetchUserProfile = async () => {
     if (!user) return;
-    const { data } = await supabase
-      .from('employees')
-      .select('full_name, avatar_url')
-      .eq('user_id', user.id)
-      .single();
-    if (data) {
-      setUserFullName(data.full_name);
-      setUserAvatar(data.avatar_url || undefined);
+    try {
+      const { data, error } = await supabase
+        .from('employees')
+        .select('full_name, avatar_url')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (error) {
+        console.warn('Error fetching user profile:', error);
+        return;
+      }
+
+      if (data) {
+        setUserFullName(data.full_name);
+        setUserAvatar(data.avatar_url || undefined);
+      }
+    } catch (error) {
+      console.error('Exception in fetchUserProfile:', error);
     }
   };
 
@@ -38,8 +48,13 @@ const DashboardLayout = () => {
   }, [user, loading, navigate]);
 
   const handleSignOut = async () => {
-    await signOut();
-    navigate("/auth");
+    try {
+      await signOut();
+      navigate("/auth");
+    } catch (error) {
+      console.error('Error signing out:', error);
+      navigate("/auth");
+    }
   };
 
   if (loading) {

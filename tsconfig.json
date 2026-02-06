@@ -12,9 +12,10 @@
     /* Эти флаги здесь работают как "запасной вариант" */
     "skipLibCheck": true,
     "allowJs": true,
-    "noImplicitAny": false,
-    "strictNullChecks": false,
-    "noUnusedLocals": false,
-    "noUnusedParameters": false
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "strict": true
   }
 }

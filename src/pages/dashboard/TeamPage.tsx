@@ -32,33 +32,45 @@ const TeamPage = () => {
   }, []);
 
   const fetchEmployees = async () => {
-    setLoading(true);
-    
-    // Fetch employees using secure RPC function (only returns public data)
-    const { data: employeesData, error: employeesError } = await supabase
-      .rpc('get_public_employees');
-    
-    if (employeesError) {
+    try {
+      setLoading(true);
+      
+      // Fetch employees using secure RPC function (only returns public data)
+      const { data: employeesData, error: employeesError } = await supabase
+        .rpc('get_public_employees');
+      
+      if (employeesError) {
+        console.error('Error fetching employees:', employeesError);
+        setLoading(false);
+        return;
+      }
+
+      if (!employeesData) {
+        setEmployees([]);
+        setLoading(false);
+        return;
+      }
+
+      // Fetch admin roles
+      const { data: rolesData } = await supabase
+        .from('user_roles')
+        .select('user_id, role')
+        .eq('role', 'admin');
+
+      const adminUserIds = new Set((rolesData || []).map(r => r.user_id));
+
+      // Map employees with admin status
+      const employeesWithRoles = (employeesData || []).map(emp => ({
+        ...emp,
+        isAdmin: emp.user_id ? adminUserIds.has(emp.user_id) : false,
+      }));
+
+      setEmployees(employeesWithRoles);
+    } catch (error) {
+      console.error('Exception in fetchEmployees:', error);
+    } finally {
       setLoading(false);
-      return;
     }
-
-    // Fetch admin roles
-    const { data: rolesData } = await supabase
-      .from('user_roles')
-      .select('user_id, role')
-      .eq('role', 'admin');
-
-    const adminUserIds = new Set((rolesData || []).map(r => r.user_id));
-
-    // Map employees with admin status
-    const employeesWithRoles = (employeesData || []).map(emp => ({
-      ...emp,
-      isAdmin: emp.user_id ? adminUserIds.has(emp.user_id) : false,
-    }));
-
-    setEmployees(employeesWithRoles);
-    setLoading(false);
   };
 
   const filteredEmployees = employees.filter(emp => 

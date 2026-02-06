@@ -104,17 +104,27 @@ const HomePage = () => {
 
   const fetchCurrentUserName = async () => {
     if (!user) return;
-    const { data } = await supabase
-      .from('employees')
-      .select('full_name, avatar_url')
-      .eq('user_id', user.id)
-      .single();
-    if (data) {
-      // Извлекаем только имя (второе слово в ФИО: Фамилия Имя Отчество)
-      const nameParts = data.full_name.split(' ');
-      const firstName = nameParts.length > 1 ? nameParts[1] : nameParts[0];
-      setCurrentUserName(firstName);
-      setCurrentUserAvatar(data.avatar_url || undefined);
+    try {
+      const { data, error } = await supabase
+        .from('employees')
+        .select('full_name, avatar_url')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (error) {
+        console.warn('Error fetching current user name:', error);
+        return;
+      }
+      
+      if (data) {
+        // Извлекаем только имя (второе слово в ФИО: Фамилия Имя Отчество)
+        const nameParts = data.full_name.split(' ');
+        const firstName = nameParts.length > 1 ? nameParts[1] : nameParts[0];
+        setCurrentUserName(firstName);
+        setCurrentUserAvatar(data.avatar_url || undefined);
+      }
+    } catch (error) {
+      console.error('Exception in fetchCurrentUserName:', error);
     }
   };
 
@@ -122,224 +132,276 @@ const HomePage = () => {
     const channel = supabase
       .channel('posts-and-news-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, () => {
-        fetchPosts();
+        void fetchPosts();
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'post_likes' }, () => {
-        fetchPosts();
+        void fetchPosts();
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'post_comments' }, () => {
-        fetchPosts();
+        void fetchPosts();
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'news' }, () => {
-        fetchNews();
+        void fetchNews();
       })
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
+    return async () => {
+      await supabase.removeChannel(channel);
     };
   };
 
   const fetchData = async () => {
-    setLoading(true);
-    await Promise.all([fetchStats(), fetchPosts(), fetchMyTasks(), fetchNews()]);
-    setLoading(false);
+    try {
+      setLoading(true);
+      await Promise.all([fetchStats(), fetchPosts(), fetchMyTasks(), fetchNews()]);
+    } catch (error) {
+      console.error('Error fetching initial data:', error);
+      toast.error('Ошибка при загрузке данных');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const fetchNews = async () => {
-    const { data: newsData, error } = await supabase
-      .from('news')
-      .select('*')
-      .eq('is_official', true)
-      .order('created_at', { ascending: false })
-      .limit(5);
+    try {
+      const { data: newsData, error } = await supabase
+        .from('news')
+        .select('*')
+        .eq('is_official', true)
+        .order('created_at', { ascending: false })
+        .limit(5);
 
-    if (error || !newsData) return;
-
-    const newsIds = newsData.map(n => n.id);
-    
-    // Fetch reactions
-    const { data: reactions } = await supabase
-      .from('news_reactions')
-      .select('news_id, reaction, user_id')
-      .in('news_id', newsIds);
-
-    // Fetch comments count
-    const { data: commentsData } = await supabase
-      .from('news_comments')
-      .select('news_id')
-      .in('news_id', newsIds);
-
-    // Process reactions
-    const reactionsMap = new Map<string, Record<string, { count: number; isReacted: boolean }>>();
-    reactions?.forEach(r => {
-      if (!reactionsMap.has(r.news_id)) {
-        reactionsMap.set(r.news_id, {});
+      if (error) {
+        console.warn('Error fetching news:', error);
+        return;
       }
-      const newsReactions = reactionsMap.get(r.news_id)!;
-      if (!newsReactions[r.reaction]) {
-        newsReactions[r.reaction] = { count: 0, isReacted: false };
+
+      if (!newsData || newsData.length === 0) {
+        setNews([]);
+        return;
       }
-      newsReactions[r.reaction].count++;
-      if (r.user_id === user?.id) {
-        newsReactions[r.reaction].isReacted = true;
-      }
-    });
 
-    // Process comments count
-    const commentsCountMap = new Map<string, number>();
-    commentsData?.forEach(c => {
-      commentsCountMap.set(c.news_id, (commentsCountMap.get(c.news_id) || 0) + 1);
-    });
+      const newsIds = newsData.map(n => n.id);
+      
+      // Fetch reactions
+      const { data: reactions } = await supabase
+        .from('news_reactions')
+        .select('news_id, reaction, user_id')
+        .in('news_id', newsIds);
 
-    const enrichedNews: NewsItem[] = newsData.map(n => ({
-      id: n.id,
-      title: n.title,
-      content: n.content,
-      created_at: n.created_at,
-      reactions: reactionsMap.get(n.id) || {},
-      comments_count: commentsCountMap.get(n.id) || 0,
-    }));
+      // Fetch comments count
+      const { data: commentsData } = await supabase
+        .from('news_comments')
+        .select('news_id')
+        .in('news_id', newsIds);
 
-    setNews(enrichedNews);
+      // Process reactions
+      const reactionsMap = new Map<string, Record<string, { count: number; isReacted: boolean }>>();
+      reactions?.forEach(r => {
+        if (!reactionsMap.has(r.news_id)) {
+          reactionsMap.set(r.news_id, {});
+        }
+        const newsReactions = reactionsMap.get(r.news_id)!;
+        if (!newsReactions[r.reaction]) {
+          newsReactions[r.reaction] = { count: 0, isReacted: false };
+        }
+        newsReactions[r.reaction].count++;
+        if (r.user_id === user?.id) {
+          newsReactions[r.reaction].isReacted = true;
+        }
+      });
+
+      // Process comments count
+      const commentsCountMap = new Map<string, number>();
+      commentsData?.forEach(c => {
+        commentsCountMap.set(c.news_id, (commentsCountMap.get(c.news_id) || 0) + 1);
+      });
+
+      const enrichedNews: NewsItem[] = newsData.map(n => ({
+        id: n.id,
+        title: n.title,
+        content: n.content,
+        created_at: n.created_at,
+        reactions: reactionsMap.get(n.id) || {},
+        comments_count: commentsCountMap.get(n.id) || 0,
+      }));
+
+      setNews(enrichedNews);
+    } catch (error) {
+      console.error('Exception in fetchNews:', error);
+    }
   };
 
   const fetchStats = async () => {
-    const [employees, tasks, files, newsData] = await Promise.all([
-      supabase.from('employees').select('id', { count: 'exact' }),
-      supabase.from('tasks').select('id', { count: 'exact' }).eq('assignee_id', user?.id),
-      supabase.from('files').select('id', { count: 'exact' }),
-      supabase.from('news').select('id', { count: 'exact' }).eq('is_official', true),
-    ]);
+    try {
+      const [employees, tasks, files, newsData] = await Promise.all([
+        supabase.from('employees').select('id', { count: 'exact' }),
+        supabase.from('tasks').select('id', { count: 'exact' }).eq('assignee_id', user?.id),
+        supabase.from('files').select('id', { count: 'exact' }),
+        supabase.from('news').select('id', { count: 'exact' }).eq('is_official', true),
+      ]);
 
-    setStats({
-      teamCount: employees.count || 0,
-      tasksCount: tasks.count || 0,
-      documentsCount: files.count || 0,
-      newsCount: newsData.count || 0,
-    });
+      setStats({
+        teamCount: employees.count || 0,
+        tasksCount: tasks.count || 0,
+        documentsCount: files.count || 0,
+        newsCount: newsData.count || 0,
+      });
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+    }
   };
 
   const fetchPosts = async () => {
-    setFeedLoading(true);
-    const { data: postsData, error } = await supabase
-      .from('posts')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(20);
+    try {
+      setFeedLoading(true);
+      const { data: postsData, error } = await supabase
+        .from('posts')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(20);
 
-    if (error) {
-      console.error('Error fetching posts:', error);
+      if (error) {
+        console.error('Error fetching posts:', error);
+        return;
+      }
+
+      if (!postsData || postsData.length === 0) {
+        setPosts([]);
+        return;
+      }
+
+      // Get author names and avatars
+      const userIds = [...new Set(postsData.map(p => p.user_id))];
+      const { data: employees } = await supabase
+        .from('employees')
+        .select('user_id, full_name, avatar_url')
+        .in('user_id', userIds);
+
+      const employeeMap = new Map(employees?.map(e => [e.user_id, { name: e.full_name, avatar: e.avatar_url }]) || []);
+
+      // Get likes and comments counts
+      const postIds = postsData.map(p => p.id);
+      
+      const { data: likes } = await supabase
+        .from('post_likes')
+        .select('post_id, user_id')
+        .in('post_id', postIds);
+
+      const { data: commentsData } = await supabase
+        .from('post_comments')
+        .select('post_id')
+        .in('post_id', postIds);
+
+      const likesMap = new Map<string, { count: number; isLiked: boolean }>();
+      likes?.forEach(like => {
+        const current = likesMap.get(like.post_id) || { count: 0, isLiked: false };
+        current.count++;
+        if (like.user_id === user?.id) current.isLiked = true;
+        likesMap.set(like.post_id, current);
+      });
+
+      const commentsCountMap = new Map<string, number>();
+      commentsData?.forEach(c => {
+        commentsCountMap.set(c.post_id, (commentsCountMap.get(c.post_id) || 0) + 1);
+      });
+
+      const enrichedPosts: Post[] = postsData.map(post => ({
+        ...post,
+        author_name: employeeMap.get(post.user_id)?.name || 'Пользователь',
+        author_avatar: employeeMap.get(post.user_id)?.avatar || undefined,
+        likes_count: likesMap.get(post.id)?.count || 0,
+        comments_count: commentsCountMap.get(post.id) || 0,
+        is_liked: likesMap.get(post.id)?.isLiked || false,
+      }));
+
+      setPosts(enrichedPosts);
+    } catch (error) {
+      console.error('Exception in fetchPosts:', error);
+    } finally {
       setFeedLoading(false);
-      return;
     }
-
-    // Get author names and avatars
-    const userIds = [...new Set(postsData?.map(p => p.user_id) || [])];
-    const { data: employees } = await supabase
-      .from('employees')
-      .select('user_id, full_name, avatar_url')
-      .in('user_id', userIds);
-
-    const employeeMap = new Map(employees?.map(e => [e.user_id, { name: e.full_name, avatar: e.avatar_url }]) || []);
-
-    // Get likes and comments counts
-    const postIds = postsData?.map(p => p.id) || [];
-    
-    const { data: likes } = await supabase
-      .from('post_likes')
-      .select('post_id, user_id')
-      .in('post_id', postIds);
-
-    const { data: commentsData } = await supabase
-      .from('post_comments')
-      .select('post_id')
-      .in('post_id', postIds);
-
-    const likesMap = new Map<string, { count: number; isLiked: boolean }>();
-    likes?.forEach(like => {
-      const current = likesMap.get(like.post_id) || { count: 0, isLiked: false };
-      current.count++;
-      if (like.user_id === user?.id) current.isLiked = true;
-      likesMap.set(like.post_id, current);
-    });
-
-    const commentsCountMap = new Map<string, number>();
-    commentsData?.forEach(c => {
-      commentsCountMap.set(c.post_id, (commentsCountMap.get(c.post_id) || 0) + 1);
-    });
-
-    const enrichedPosts: Post[] = (postsData || []).map(post => ({
-      ...post,
-      author_name: employeeMap.get(post.user_id)?.name || 'Пользователь',
-      author_avatar: employeeMap.get(post.user_id)?.avatar || undefined,
-      likes_count: likesMap.get(post.id)?.count || 0,
-      comments_count: commentsCountMap.get(post.id) || 0,
-      is_liked: likesMap.get(post.id)?.isLiked || false,
-    }));
-
-    setPosts(enrichedPosts);
-    setFeedLoading(false);
   };
 
   const fetchMyTasks = async () => {
-    const { data } = await supabase
-      .from('tasks')
-      .select('id, title, due_date')
-      .eq('assignee_id', user?.id)
-      .neq('status', 'done')
-      .order('created_at', { ascending: false })
-      .limit(5);
+    try {
+      const { data, error } = await supabase
+        .from('tasks')
+        .select('id, title, due_date')
+        .eq('assignee_id', user?.id)
+        .neq('status', 'done')
+        .order('created_at', { ascending: false })
+        .limit(5);
 
-    setMyTasks(data || []);
+      if (error) {
+        console.warn('Error fetching tasks:', error);
+        return;
+      }
+
+      setMyTasks(data || []);
+    } catch (error) {
+      console.error('Exception in fetchMyTasks:', error);
+    }
   };
 
   const handleCreatePost = async (content: string) => {
     if (!user) return;
 
-    // Get current user's name from employees
-    const { data: empData } = await supabase
-      .from('employees')
-      .select('full_name')
-      .eq('user_id', user.id)
-      .single();
+    try {
+      // Get current user's name from employees
+      const { data: empData, error: empError } = await supabase
+        .from('employees')
+        .select('full_name')
+        .eq('user_id', user.id)
+        .single();
 
-    const authorName = empData?.full_name || 'Пользователь';
-    const tempId = `temp-${Date.now()}`;
-    
-    // Optimistic update - add post immediately to UI
-    const newPost: Post = {
-      id: tempId,
-      user_id: user.id,
-      content,
-      created_at: new Date().toISOString(),
-      author_name: authorName,
-      likes_count: 0,
-      comments_count: 0,
-      is_liked: false,
-    };
-    
-    setPosts(prev => [newPost, ...prev]);
+      if (empError) {
+        toast.error('Ошибка при загрузке данных пользователя');
+        return;
+      }
 
-    const { data, error } = await supabase.from('posts').insert({
-      user_id: user.id,
-      content,
-    }).select().single();
+      const authorName = empData?.full_name || 'Пользователь';
+      const tempId = `temp-${Date.now()}`;
+      
+      // Optimistic update - add post immediately to UI
+      const newPost: Post = {
+        id: tempId,
+        user_id: user.id,
+        content,
+        created_at: new Date().toISOString(),
+        author_name: authorName,
+        likes_count: 0,
+        comments_count: 0,
+        is_liked: false,
+      };
+      
+      setPosts(prev => [newPost, ...prev]);
 
-    if (error) {
-      toast.error('Ошибка создания поста');
-      // Revert on error
-      setPosts(prev => prev.filter(p => p.id !== tempId));
-    } else {
-      // Replace temp post with real one
-      setPosts(prev => prev.map(p => 
-        p.id === tempId ? { ...newPost, id: data.id } : p
-      ));
-      toast.success('Пост опубликован');
+      const { data, error } = await supabase.from('posts').insert({
+        user_id: user.id,
+        content,
+      }).select().single();
+
+      if (error) {
+        toast.error('Ошибка создания поста');
+        // Revert on error
+        setPosts(prev => prev.filter(p => p.id !== tempId));
+      } else if (data) {
+        // Replace temp post with real one
+        setPosts(prev => prev.map(p => 
+          p.id === tempId ? { ...newPost, id: data.id } : p
+        ));
+        toast.success('Пост опубликован');
+      }
+    } catch (error) {
+      console.error('Exception in handleCreatePost:', error);
+      toast.error('Ошибка при создании поста');
     }
   };
 
   const handleLike = async (postId: string, isLiked: boolean) => {
+    if (!user) return;
+
     // Optimistic update
     setPosts(prev => prev.map(p => 
       p.id === postId 
@@ -347,10 +409,38 @@ const HomePage = () => {
         : p
     ));
 
-    if (isLiked) {
-      await supabase.from('post_likes').delete().eq('post_id', postId).eq('user_id', user?.id);
-    } else {
-      await supabase.from('post_likes').insert({ post_id: postId, user_id: user?.id });
+    try {
+      if (isLiked) {
+        const { error } = await supabase.from('post_likes').delete().eq('post_id', postId).eq('user_id', user.id);
+        if (error) {
+          // Revert on error
+          setPosts(prev => prev.map(p => 
+            p.id === postId 
+              ? { ...p, is_liked: true, likes_count: p.likes_count + 1 }
+              : p
+          ));
+          console.error('Error unliking post:', error);
+        }
+      } else {
+        const { error } = await supabase.from('post_likes').insert({ post_id: postId, user_id: user.id });
+        if (error) {
+          // Revert on error
+          setPosts(prev => prev.map(p => 
+            p.id === postId 
+              ? { ...p, is_liked: false, likes_count: p.likes_count - 1 }
+              : p
+          ));
+          console.error('Error liking post:', error);
+        }
+      }
+    } catch (error) {
+      console.error('Exception in handleLike:', error);
+      // Revert on error
+      setPosts(prev => prev.map(p => 
+        p.id === postId 
+          ? { ...p, is_liked: isLiked, likes_count: isLiked ? p.likes_count + 1 : p.likes_count - 1 }
+          : p
+      ));
     }
   };
 
