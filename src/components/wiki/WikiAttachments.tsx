@@ -84,7 +84,7 @@ export const WikiAttachments = ({ documentId, canEdit = true }: WikiAttachmentsP
         continue;
       }
 
-      const { data: urlData } = supabase.storage
+      supabase.storage
         .from('wiki-attachments')
         .getPublicUrl(fileName);
 

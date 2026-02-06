@@ -212,7 +212,7 @@ const RichTextEditor = ({
       const fileName = `${Date.now()}.${fileExt}`;
       const filePath = `${fileName}`;
 
-      const { data, error } = await supabase.storage
+      const { error } = await supabase.storage
         .from('wiki-attachments')
         .upload(filePath, file);
 
